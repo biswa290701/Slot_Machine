@@ -10,7 +10,7 @@ public class ReelColumn : MonoBehaviour
     [SerializeField] private SymbolData[] allSymbols;
     [SerializeField] private RectTransform reelStripContent;
     [SerializeField] private float symbolHeight = 100f;
-    [SerializeField] private int paddingCount = 5;
+    [SerializeField] private int paddingCount = 8;
 
     private float symbolSpacing;
     private bool isSpinning = false;

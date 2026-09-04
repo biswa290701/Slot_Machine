@@ -9,6 +9,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private SymbolData[] symbols;
     [SerializeField] private UIManager uiManager;
     [SerializeField] private WinPopup winPopup;
+    [SerializeField] private LeverController leverController;
 
     private bool isSpinning = false;
 
@@ -27,7 +28,7 @@ public class GameManager : MonoBehaviour
             return;
 
         isSpinning = true;
-        uiManager.SetSpinButtonInteractable(false);
+        leverController.SetInteractable(false);
         winPopup.Hide();
         uiManager.SetWinText(0);
 
@@ -57,6 +58,6 @@ public class GameManager : MonoBehaviour
             winPopup.ShowPopup(totalWin);
         }
 
-        uiManager.SetSpinButtonInteractable(wallet.CanPlaceBet());
+        leverController.SetInteractable(wallet.CanPlaceBet());
     }
 }
