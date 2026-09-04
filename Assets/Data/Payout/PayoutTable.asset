@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26ea06d0afb32044183c8115dbfc8632, type: 3}
+  m_Name: PayoutTable
+  m_EditorClassIdentifier: Assembly-CSharp::PayoutTable
+  symbols:
+  - {fileID: 11400000, guid: 343dca8e1719f1c4ba857adc1c994244, type: 2}
+  - {fileID: 11400000, guid: 5f3670773100bf646acab9780f5fdd1c, type: 2}
+  - {fileID: 11400000, guid: c587e9e030682d040973798a7fb13eff, type: 2}
+  - {fileID: 11400000, guid: 3e0a10b197745294bba3cab6925e498b, type: 2}
+  threeOfAKindMultipliers: 02000000050000000a00000019000000
