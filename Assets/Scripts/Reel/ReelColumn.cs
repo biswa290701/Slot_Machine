@@ -12,6 +12,10 @@ public class ReelColumn : MonoBehaviour
     [SerializeField] private float symbolHeight = 100f;
     [SerializeField] private int paddingCount = 8;
 
+    // Fixed visual sequence for non-target filler symbols during reel spin.
+    // Cycles through allSymbols by index. Modify this array to change the scrolling pattern.
+    private static readonly int[] visualSequence = { 0, 1, 2, 3 };
+
     private float symbolSpacing;
     private bool isSpinning = false;
     private Coroutine spinCoroutine;
@@ -117,7 +121,32 @@ public class ReelColumn : MonoBehaviour
             }
             else
             {
-                symbolToShow = allSymbols[UnityEngine.Random.Range(0, allSymbols.Length)];
+                symbolToShow = allSymbols[visualSequence[i % visualSequence.Length]];
+
+                // The target is randomly selected independently of the deterministic
+                // visual sequence, which can create duplicate adjacent symbols at the
+                // target boundary. When a filler equals the target and is adjacent to it,
+                // deterministically advance through the visual sequence to find a symbol
+                // that differs from both the target and the other neighbor.
+                if (symbolToShow == targetSymbol)
+                {
+                    int targetPos = paddingCount;
+                    if (i == targetPos - 1 || i == targetPos + 1)
+                    {
+                        int otherNeighbor = (i < targetPos) ? i - 1 : i + 1;
+                        SymbolData otherSymbol = allSymbols[visualSequence[otherNeighbor % visualSequence.Length]];
+
+                        for (int offset = 1; offset < visualSequence.Length; offset++)
+                        {
+                            SymbolData candidate = allSymbols[visualSequence[(i + offset) % visualSequence.Length]];
+                            if (candidate != targetSymbol && candidate != otherSymbol)
+                            {
+                                symbolToShow = candidate;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
 
             GameObject symbolGO = new GameObject("Symbol_" + i, typeof(RectTransform), typeof(Image));
