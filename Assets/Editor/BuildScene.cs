@@ -119,7 +119,7 @@ public static class BuildScene
         leverRect.anchorMax = new Vector2(1f, 0.5f);
         leverRect.pivot = new Vector2(0.5f, 0f);
         leverRect.sizeDelta = new Vector2(94, 272);
-        leverRect.anchoredPosition = new Vector2(10, -60);
+        leverRect.anchoredPosition = new Vector2(-30, -250);
         var leverImg = leverGO.AddComponent<Image>();
         leverImg.sprite = LoadSprite("f67aab7c3b90a0147bbea5420c271311");
         leverImg.raycastTarget = true;
