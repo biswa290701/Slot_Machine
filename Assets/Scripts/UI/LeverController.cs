@@ -1,33 +1,36 @@
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections;
 
 public class LeverController : MonoBehaviour
 {
-    [Header("References")]
-    [SerializeField] private GameManager gameManager;
+    [Header("Visual")]
     [SerializeField] private Image leverImage;
+
+    [Header("Interaction")]
     [SerializeField] private Button leverButton;
 
     [Header("Sprites")]
     [SerializeField] private Sprite leverUp;
     [SerializeField] private Sprite leverDown;
 
-    [Header("Timing")]
-    [Tooltip("How long the lever stays in the DOWN position before returning to UP")]
-    [SerializeField] private float pullDuration = 0.3f;
+    [Header("Down State Offset")]
+    [Tooltip("Position offset applied to LeverVisual when the DOWN sprite is active. Adjust in Inspector to align the pulled lever.")]
+    [SerializeField] private Vector2 downPositionOffset = Vector2.zero;
+
+    [Header("References")]
+    [SerializeField] private GameManager gameManager;
 
     private bool isLocked = false;
+    private Vector2 upPosition;
 
     private void Awake()
     {
+        var rect = leverImage.GetComponent<RectTransform>();
+        upPosition = rect.anchoredPosition;
         leverImage.sprite = leverUp;
         leverButton.onClick.AddListener(OnLeverClicked);
     }
 
-    // Lever click handler: lock interaction, show DOWN sprite, trigger spin immediately,
-    // then wait before returning to UP. The spin starts at the moment of the pull so
-    // reels begin animating while the lever is still visually in the DOWN position.
     private void OnLeverClicked()
     {
         if (isLocked)
@@ -35,34 +38,33 @@ public class LeverController : MonoBehaviour
 
         isLocked = true;
         leverButton.interactable = false;
+        ApplyState(leverDown, downPositionOffset);
         gameManager.Spin();
-        StartCoroutine(PullSequence());
     }
 
-    // Two-phase coroutine: DOWN for pullDuration, then back to UP.
-    // The UP transition is purely visual and does not re-enable interaction --
-    // that is controlled externally via SetInteractable() after all reels stop.
-    private IEnumerator PullSequence()
-    {
-        leverImage.sprite = leverDown;
-        yield return new WaitForSeconds(pullDuration);
-        leverImage.sprite = leverUp;
-    }
-
-    // Called by GameManager when all reels stop to re-enable or disable the lever.
-    // Uses a separate lock flag so the visual UP/DOWN transition and the click
-    // gate are independent -- the lever can return to UP while still locked.
     public void SetInteractable(bool interactable)
     {
         if (interactable)
         {
             isLocked = false;
             leverButton.interactable = true;
+            ApplyState(leverUp, Vector2.zero);
         }
         else
         {
             isLocked = true;
             leverButton.interactable = false;
         }
+    }
+
+    // Immediately sets the sprite, resizes the RectTransform to match the sprite's
+    // native dimensions, and applies the given position offset relative to the
+    // UP state's anchored position. offset=(0,0) restores the UP position exactly.
+    private void ApplyState(Sprite sprite, Vector2 offset)
+    {
+        leverImage.sprite = sprite;
+        var rect = leverImage.GetComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(sprite.rect.width, sprite.rect.height);
+        rect.anchoredPosition = upPosition + offset;
     }
 }

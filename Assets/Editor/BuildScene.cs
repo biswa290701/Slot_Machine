@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.InputSystem.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using TMPro;
@@ -11,14 +12,12 @@ public static class BuildScene
     {
         var scene = EditorSceneManager.GetActiveScene();
 
-        // Clear existing root objects except camera
         foreach (var root in scene.GetRootGameObjects())
         {
             if (root.name != "Main Camera")
                 Object.DestroyImmediate(root);
         }
 
-        // Configure Main Camera
         var cam = Camera.main;
         cam.orthographic = true;
         cam.orthographicSize = 5f;
@@ -54,7 +53,7 @@ public static class BuildScene
         mcRect.anchorMin = new Vector2(0.5f, 0.5f);
         mcRect.anchorMax = new Vector2(0.5f, 0.5f);
         mcRect.pivot = new Vector2(0.5f, 0.5f);
-        mcRect.sizeDelta = new Vector2(650, 650);
+        mcRect.sizeDelta = new Vector2(650f, 650f);
         mcRect.anchoredPosition = Vector2.zero;
 
         // MachineFrame
@@ -70,6 +69,8 @@ public static class BuildScene
         float reelY = 40f;
         float maskW = 110f;
         float maskH = 160f;
+        var reelMaskGOs = new GameObject[3];
+        var reelStripGOs = new GameObject[3];
 
         for (int i = 0; i < 3; i++)
         {
@@ -81,6 +82,7 @@ public static class BuildScene
             maskRect.sizeDelta = new Vector2(maskW, maskH);
             maskRect.anchoredPosition = new Vector2(reelX[i], reelY);
             maskGO.AddComponent<RectMask2D>();
+            reelMaskGOs[i] = maskGO;
 
             var stripGO = CreateUIObject($"ReelStripContent_{i}", maskGO.transform);
             var stripRect = stripGO.GetComponent<RectTransform>();
@@ -89,6 +91,7 @@ public static class BuildScene
             stripRect.pivot = new Vector2(0.5f, 1f);
             stripRect.sizeDelta = new Vector2(100, 1100);
             stripRect.anchoredPosition = Vector2.zero;
+            reelStripGOs[i] = stripGO;
         }
 
         // ── UIPanel ──
@@ -100,30 +103,50 @@ public static class BuildScene
         uiPanelRect.sizeDelta = new Vector2(0, 80);
         uiPanelRect.anchoredPosition = Vector2.zero;
 
-        // Credits
         CreateLabel(uiPanel.transform, "CreditsLabel", "CREDITS", new Vector2(-500, 45), 20);
         CreateValueText(uiPanel.transform, "CreditsText", "1000", new Vector2(-500, 10), 28);
-
-        // Bet
         CreateLabel(uiPanel.transform, "BetLabel", "BET", new Vector2(-100, 45), 20);
         CreateValueText(uiPanel.transform, "BetText", "10", new Vector2(-100, 10), 28);
-
-        // Win
         CreateLabel(uiPanel.transform, "WinLabel", "WIN", new Vector2(300, 45), 20);
         CreateValueText(uiPanel.transform, "WinText", "", new Vector2(300, 10), 28);
 
-        // ── Lever ──
-        var leverGO = CreateUIObject("Lever", machineContainer.transform);
-        var leverRect = leverGO.GetComponent<RectTransform>();
-        leverRect.anchorMin = new Vector2(1f, 0.5f);
-        leverRect.anchorMax = new Vector2(1f, 0.5f);
-        leverRect.pivot = new Vector2(0.5f, 0f);
-        leverRect.sizeDelta = new Vector2(94, 272);
-        leverRect.anchoredPosition = new Vector2(-30, -250);
-        var leverImg = leverGO.AddComponent<Image>();
+        // ── LeverVisual ──
+        // slot-machine2.png and slot-machine3.png are Sprite Mode = Multiple.
+        // LoadAssetAtPath returns the sub-sprites: slot-machine2_0 (94x272) and
+        // slot-machine3_0 (94x61). These are NOT full-canvas overlays.
+        //
+        // Position is calculated by scaling the sub-sprite's canvas coordinates
+        // (672, 57) by 650/816 to map from the 816x624 source canvas into the
+        // 650x650 MachineContainer.
+        float canvasScale = 650f / 816f;
+        float leverW = 94f * canvasScale;   // 74.9
+        float leverH = 272f * canvasScale;  // 216.7
+        float leverX = 672f * canvasScale;  // 535.3 (from left)
+        float leverY = 57f * canvasScale;   // 45.4  (from bottom)
+
+        var leverVisualGO = CreateUIObject("LeverVisual", machineContainer.transform);
+        var leverVisRect = leverVisualGO.GetComponent<RectTransform>();
+        leverVisRect.anchorMin = new Vector2(0f, 0f);
+        leverVisRect.anchorMax = new Vector2(0f, 0f);
+        leverVisRect.pivot = new Vector2(0f, 0f);
+        leverVisRect.sizeDelta = new Vector2(leverW, leverH);
+        leverVisRect.anchoredPosition = new Vector2(leverX, leverY);
+        var leverImg = leverVisualGO.AddComponent<Image>();
         leverImg.sprite = LoadSprite("f67aab7c3b90a0147bbea5420c271311");
-        leverImg.raycastTarget = true;
-        leverGO.AddComponent<Button>();
+        leverImg.preserveAspect = true;
+        leverImg.raycastTarget = false;
+
+        // ── LeverHitArea: transparent Button over the lever ──
+        var leverHitGO = CreateUIObject("LeverHitArea", machineContainer.transform);
+        var leverHitRect = leverHitGO.GetComponent<RectTransform>();
+        leverHitRect.anchorMin = new Vector2(0f, 0f);
+        leverHitRect.anchorMax = new Vector2(0f, 0f);
+        leverHitRect.pivot = new Vector2(0f, 0f);
+        leverHitRect.sizeDelta = new Vector2(leverW, leverH);
+        leverHitRect.anchoredPosition = new Vector2(leverX, leverY);
+        var leverHitImg = leverHitGO.AddComponent<Image>();
+        leverHitImg.color = new Color(0, 0, 0, 0);
+        leverHitGO.AddComponent<Button>();
 
         // ── WinPopup (inactive) ──
         var popupGO = CreateUIObject("WinPopup", canvasGO.transform);
@@ -138,7 +161,7 @@ public static class BuildScene
 
         var popupPanel = CreateUIObject("PopupPanel", popupGO.transform);
         var popupPanelImg = popupPanel.AddComponent<Image>();
-        popupPanelImg.sprite = LoadSprite("c95d78159310e6d4495736826ae2b924");
+        popupPanelImg.sprite = LoadSprite("22515f8310483534fa4e0fc29072c070");
         popupPanelImg.type = Image.Type.Simple;
         popupPanelImg.preserveAspect = false;
         var ppRect = popupPanel.GetComponent<RectTransform>();
@@ -161,37 +184,131 @@ public static class BuildScene
         winAmtTMP.alignment = TextAlignmentOptions.Center;
         winAmtTMP.color = Color.white;
 
-        // ── GameManager ──
-        var gmGO = new GameObject("GameManager");
-        var gm = gmGO.AddComponent<GameManager>();
+        var yesBtnGO = CreateUIObject("YesButton", popupPanel.transform);
+        var yesBtnRect = yesBtnGO.GetComponent<RectTransform>();
+        yesBtnRect.anchorMin = new Vector2(0.3f, 0f);
+        yesBtnRect.anchorMax = new Vector2(0.3f, 0f);
+        yesBtnRect.pivot = new Vector2(0.5f, 0f);
+        yesBtnRect.sizeDelta = new Vector2(200, 60);
+        yesBtnRect.anchoredPosition = new Vector2(0, 20);
+        var yesBtnImg = yesBtnGO.AddComponent<Image>();
+        yesBtnImg.sprite = LoadSprite("eeb053c62cfc19d4eac8d4988d4dac5f");
+        yesBtnImg.type = Image.Type.Simple;
+        yesBtnImg.preserveAspect = true;
+        yesBtnGO.AddComponent<Button>();
+
+        var noBtnGO = CreateUIObject("NoButton", popupPanel.transform);
+        var noBtnRect = noBtnGO.GetComponent<RectTransform>();
+        noBtnRect.anchorMin = new Vector2(0.7f, 0f);
+        noBtnRect.anchorMax = new Vector2(0.7f, 0f);
+        noBtnRect.pivot = new Vector2(0.5f, 0f);
+        noBtnRect.sizeDelta = new Vector2(200, 60);
+        noBtnRect.anchoredPosition = new Vector2(0, 20);
+        var noBtnImg = noBtnGO.AddComponent<Image>();
+        noBtnImg.sprite = LoadSprite("eeb053c62cfc19d4eac8d4988d4dac5f");
+        noBtnImg.type = Image.Type.Simple;
+        noBtnImg.preserveAspect = true;
+        noBtnGO.AddComponent<Button>();
+
+        // ── WinPopup wiring (must happen before GameManager references it) ──
+        var popup = popupGO.AddComponent<WinPopup>();
+        var wpSO = new SerializedObject(popup);
+        wpSO.FindProperty("popupPanel").objectReferenceValue = popupPanel;
+        wpSO.FindProperty("winAmountText").objectReferenceValue = winAmtTMP;
+        wpSO.FindProperty("yesButton").objectReferenceValue = yesBtnGO.GetComponent<Button>();
+        wpSO.FindProperty("noButton").objectReferenceValue = noBtnGO.GetComponent<Button>();
+        wpSO.ApplyModifiedProperties();
+
+        // ── Wallet ──
+        var walletGO = new GameObject("Wallet");
+        var wallet = walletGO.AddComponent<Wallet>();
+
+        // ── UIManager ──
+        var uiManagerGO = new GameObject("UIManager");
+        var uiMgr = uiManagerGO.AddComponent<UIManager>();
+        var uiMgrSO = new SerializedObject(uiMgr);
+        uiMgrSO.FindProperty("wallet").objectReferenceValue = wallet;
+        uiMgrSO.FindProperty("creditsText").objectReferenceValue = FindChildTMP(uiPanel, "CreditsText");
+        uiMgrSO.FindProperty("betText").objectReferenceValue = FindChildTMP(uiPanel, "BetText");
+        uiMgrSO.FindProperty("winText").objectReferenceValue = FindChildTMP(uiPanel, "WinText");
+        uiMgrSO.ApplyModifiedProperties();
+
+        // ── ReelColumn on each ReelMask ──
+        SymbolData[] allSymbols = LoadSymbolAssets();
+        for (int i = 0; i < 3; i++)
+        {
+            var reelCol = reelMaskGOs[i].AddComponent<ReelColumn>();
+            var rcSO = new SerializedObject(reelCol);
+            rcSO.FindProperty("allSymbols").arraySize = allSymbols.Length;
+            for (int s = 0; s < allSymbols.Length; s++)
+                rcSO.FindProperty("allSymbols").GetArrayElementAtIndex(s).objectReferenceValue = allSymbols[s];
+            rcSO.FindProperty("reelStripContent").objectReferenceValue = reelStripGOs[i].GetComponent<RectTransform>();
+            rcSO.FindProperty("symbolHeight").floatValue = 100f;
+            rcSO.FindProperty("paddingCount").intValue = 8;
+            rcSO.ApplyModifiedProperties();
+        }
 
         // ── ReelManager ──
         var rmGO = new GameObject("ReelManager");
-        rmGO.AddComponent<ReelManager>();
+        var reelMgr = rmGO.AddComponent<ReelManager>();
+        var rmSO = new SerializedObject(reelMgr);
+        rmSO.FindProperty("reels").arraySize = 3;
+        for (int i = 0; i < 3; i++)
+            rmSO.FindProperty("reels").GetArrayElementAtIndex(i).objectReferenceValue = reelMaskGOs[i].GetComponent<ReelColumn>();
+        rmSO.ApplyModifiedProperties();
 
         // ── LeverController ──
         var lcGO = new GameObject("LeverController");
         var leverCtrl = lcGO.AddComponent<LeverController>();
-
-        // Wire LeverController serialized references via SerializedObject
         var lcSO = new SerializedObject(leverCtrl);
-        lcSO.FindProperty("gameManager").objectReferenceValue = gm;
         lcSO.FindProperty("leverImage").objectReferenceValue = leverImg;
-        lcSO.FindProperty("leverButton").objectReferenceValue = leverGO.GetComponent<Button>();
+        lcSO.FindProperty("leverButton").objectReferenceValue = leverHitGO.GetComponent<Button>();
         lcSO.FindProperty("leverUp").objectReferenceValue = leverImg.sprite;
         lcSO.FindProperty("leverDown").objectReferenceValue = LoadSprite("546541a6bbeef114abcc35cb39cd0fe6");
         lcSO.ApplyModifiedProperties();
 
+        // ── GameManager ──
+        PayoutTable payoutTable = LoadPayoutTable();
+        var gmGO = new GameObject("GameManager");
+        var gm = gmGO.AddComponent<GameManager>();
+        var gmSO = new SerializedObject(gm);
+        gmSO.FindProperty("wallet").objectReferenceValue = wallet;
+        gmSO.FindProperty("reelManager").objectReferenceValue = reelMgr;
+        gmSO.FindProperty("payoutTable").objectReferenceValue = payoutTable;
+        gmSO.FindProperty("uiManager").objectReferenceValue = uiMgr;
+        gmSO.FindProperty("winPopup").objectReferenceValue = popup;
+        gmSO.FindProperty("leverController").objectReferenceValue = leverCtrl;
+        gmSO.FindProperty("symbols").arraySize = allSymbols.Length;
+        for (int i = 0; i < allSymbols.Length; i++)
+            gmSO.FindProperty("symbols").GetArrayElementAtIndex(i).objectReferenceValue = allSymbols[i];
+        gmSO.ApplyModifiedProperties();
+
+        // Now that GameManager exists, wire it into LeverController
+        lcSO = new SerializedObject(leverCtrl);
+        lcSO.FindProperty("gameManager").objectReferenceValue = gm;
+        lcSO.ApplyModifiedProperties();
+
         // ── EventSystem ──
-        if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+        var existingES = Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>();
+        GameObject esGO;
+        if (existingES != null)
         {
-            var esGO = new GameObject("EventSystem");
+            esGO = existingES.gameObject;
+            var oldModule = existingES.GetComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            if (oldModule != null)
+                Object.DestroyImmediate(oldModule);
+            if (existingES.GetComponent<InputSystemUIInputModule>() == null)
+                esGO.AddComponent<InputSystemUIInputModule>();
+        }
+        else
+        {
+            esGO = new GameObject("EventSystem");
             esGO.AddComponent<UnityEngine.EventSystems.EventSystem>();
-            esGO.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            esGO.AddComponent<InputSystemUIInputModule>();
         }
 
         EditorSceneManager.MarkSceneDirty(scene);
-        Debug.Log("Slot machine scene built successfully. Wire Inspector references on GameManager, ReelManager, UIManager, and Wallet.");
+        Debug.Log("Slot machine scene built successfully with all references wired.");
     }
 
     static GameObject CreateUIObject(string name, Transform parent)
@@ -241,6 +358,30 @@ public static class BuildScene
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = Color.white;
         tmp.fontStyle = FontStyles.Bold;
+    }
+
+    static TextMeshProUGUI FindChildTMP(GameObject parent, string childName)
+    {
+        var transform = parent.transform.Find(childName);
+        if (transform != null)
+            return transform.GetComponent<TextMeshProUGUI>();
+        return null;
+    }
+
+    static SymbolData[] LoadSymbolAssets()
+    {
+        return new SymbolData[]
+        {
+            AssetDatabase.LoadAssetAtPath<SymbolData>("Assets/Data/Symbols/Symbol_1.asset"),
+            AssetDatabase.LoadAssetAtPath<SymbolData>("Assets/Data/Symbols/Symbol_2.asset"),
+            AssetDatabase.LoadAssetAtPath<SymbolData>("Assets/Data/Symbols/Symbol_3.asset"),
+            AssetDatabase.LoadAssetAtPath<SymbolData>("Assets/Data/Symbols/Symbol_4.asset"),
+        };
+    }
+
+    static PayoutTable LoadPayoutTable()
+    {
+        return AssetDatabase.LoadAssetAtPath<PayoutTable>("Assets/Data/Payout/PayoutTable.asset");
     }
 
     static Sprite LoadSprite(string guid)

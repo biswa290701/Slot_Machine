@@ -50,7 +50,7 @@ public static class CreateSlotAssets
         so.dropWeight = weight;
         so.payoutMultiplier = payoutMultiplier;
 
-        Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+        Sprite sprite = LoadFullSprite(spritePath);
         if (sprite != null)
         {
             so.sprite = sprite;
@@ -88,5 +88,21 @@ public static class CreateSlotAssets
 
         AssetDatabase.CreateAsset(so, assetPath);
         Debug.Log($"Created: {assetPath}");
+    }
+
+    private static Sprite LoadFullSprite(string path)
+    {
+        TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (importer == null) return null;
+
+        if (importer.spriteImportMode == SpriteImportMode.Multiple)
+        {
+            Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (tex == null) return null;
+            return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height),
+                new Vector2(0.5f, 0.5f));
+        }
+
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
     }
 }

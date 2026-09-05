@@ -35,18 +35,22 @@ public class ReelColumn : MonoBehaviour
         spinCoroutine = StartCoroutine(SpinSequence(targetSymbol, delay));
     }
 
-    // The strip is laid out with the target symbol at index paddingCount (the middle).
-    // We scroll from Y=0 to Y=-(paddingCount+1)*spacing, which moves the strip downward
-    // so that the target symbol lands exactly in the visible mask window.
+    // The final scroll offset is computed from actual UI geometry rather than a formula.
+    // After BuildStrip() places the target at strip index paddingCount and layout settles,
+    // we read the target's world position, convert it to mask-local coords, and compute
+    // the exact strip offset needed to place the target's center at the mask's center (y=0).
+    // This works regardless of mask size, anchor, pivot, or manual Inspector adjustments.
     private IEnumerator SpinSequence(SymbolData targetSymbol, float delay)
     {
-        BuildStrip(targetSymbol);
+        RectTransform targetRT = BuildStrip(targetSymbol);
         yield return null;
 
+        RectTransform maskRect = reelStripContent.parent as RectTransform;
+        Vector3 targetWorldPos = targetRT.TransformPoint(Vector3.zero);
+        Vector3 targetMaskLocal = maskRect.InverseTransformPoint(targetWorldPos);
+
         float startY = 0f;
-        // Scroll past all padding symbols plus one more step to land on the target
-        float totalScrollDistance = (paddingCount + 1) * symbolSpacing;
-        float targetY = -totalScrollDistance;
+        float targetY = -targetMaskLocal.y;
 
         float elapsed = 0f;
         float spinDuration = delay;
@@ -87,10 +91,9 @@ public class ReelColumn : MonoBehaviour
         onStopped?.Invoke();
     }
 
-    // Constructs the visual reel strip at runtime. The target symbol is placed at the
-    // exact index where it will land in the mask window after scrolling. Symbols above
-    // and below are random filler that scroll through during the animation.
-    private void BuildStrip(SymbolData targetSymbol)
+    // Constructs the visual reel strip at runtime. Returns the target symbol's RectTransform
+    // so SpinSequence can compute the exact scroll offset from actual geometry.
+    private RectTransform BuildStrip(SymbolData targetSymbol)
     {
         foreach (Transform child in reelStripContent)
         {
@@ -103,10 +106,10 @@ public class ReelColumn : MonoBehaviour
         reelStripContent.sizeDelta = new Vector2(reelStripContent.sizeDelta.x, totalHeight);
         reelStripContent.anchoredPosition = new Vector2(reelStripContent.anchoredPosition.x, 0f);
 
+        RectTransform targetRT = null;
+
         for (int i = 0; i < totalSymbols; i++)
         {
-            // Target symbol occupies the exact center position (paddingCount index) so it
-            // aligns with the mask window when the scroll reaches its final Y offset.
             SymbolData symbolToShow;
             if (i == paddingCount)
             {
@@ -125,6 +128,9 @@ public class ReelColumn : MonoBehaviour
             float yPos = -i * symbolSpacing;
             rt.anchoredPosition = new Vector2(0f, yPos);
 
+            if (i == paddingCount)
+                targetRT = rt;
+
             Image img = symbolGO.GetComponent<Image>();
             if (symbolToShow != null && symbolToShow.sprite != null)
             {
@@ -134,5 +140,7 @@ public class ReelColumn : MonoBehaviour
 
             symbolImages.Add(img);
         }
+
+        return targetRT;
     }
 }

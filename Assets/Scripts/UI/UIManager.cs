@@ -1,13 +1,10 @@
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 
 public class UIManager : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private Wallet wallet;
-    [SerializeField] private GameManager gameManager;
-    [SerializeField] private Button spinButton;
     [SerializeField] private TextMeshProUGUI creditsText;
     [SerializeField] private TextMeshProUGUI betText;
     [SerializeField] private TextMeshProUGUI winText;
@@ -17,15 +14,9 @@ public class UIManager : MonoBehaviour
     private void Start()
     {
         wallet.onCreditsChanged.AddListener(UpdateCreditsDisplay);
-        spinButton.onClick.AddListener(OnSpinClicked);
         UpdateCreditsDisplay();
         UpdateBetDisplay();
         SetWinText(0);
-    }
-
-    private void OnSpinClicked()
-    {
-        gameManager.Spin();
     }
 
     public void UpdateCreditsDisplay()
@@ -44,11 +35,5 @@ public class UIManager : MonoBehaviour
     {
         if (winText != null)
             winText.text = amount > 0 ? amount.ToString() : "";
-    }
-
-    public void SetSpinButtonInteractable(bool interactable)
-    {
-        if (spinButton != null)
-            spinButton.interactable = interactable;
     }
 }
