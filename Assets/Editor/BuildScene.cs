@@ -65,8 +65,12 @@ public static class BuildScene
         StretchFill(frameGO.GetComponent<RectTransform>());
 
         // ── Reel Masks ──
-        float[] reelX = { -120f, 0f, 120f };
-        float reelY = 40f;
+        // Manually tuned local positions inside the 650x650 MachineContainer.
+        Vector3[] reelMaskPos = {
+            new Vector3(-170f, -30f, 0f),
+            new Vector3(-30f, -30f, 0f),
+            new Vector3(105f, -30f, 0f)
+        };
         float maskW = 110f;
         float maskH = 160f;
         var reelMaskGOs = new GameObject[3];
@@ -80,7 +84,7 @@ public static class BuildScene
             maskRect.anchorMax = new Vector2(0.5f, 0.5f);
             maskRect.pivot = new Vector2(0.5f, 0.5f);
             maskRect.sizeDelta = new Vector2(maskW, maskH);
-            maskRect.anchoredPosition = new Vector2(reelX[i], reelY);
+            maskRect.anchoredPosition = reelMaskPos[i];
             maskGO.AddComponent<RectMask2D>();
             reelMaskGOs[i] = maskGO;
 
@@ -103,47 +107,37 @@ public static class BuildScene
         uiPanelRect.sizeDelta = new Vector2(0, 80);
         uiPanelRect.anchoredPosition = Vector2.zero;
 
-        CreateLabel(uiPanel.transform, "CreditsLabel", "CREDITS", new Vector2(-500, 45), 20);
-        CreateValueText(uiPanel.transform, "CreditsText", "1000", new Vector2(-500, 10), 28);
-        CreateLabel(uiPanel.transform, "BetLabel", "BET", new Vector2(-100, 45), 20);
-        CreateValueText(uiPanel.transform, "BetText", "10", new Vector2(-100, 10), 28);
-        CreateLabel(uiPanel.transform, "WinLabel", "WIN", new Vector2(300, 45), 20);
-        CreateValueText(uiPanel.transform, "WinText", "", new Vector2(300, 10), 28);
+        // ── Bottom UI — manually tuned positions ──
+        CreateLabel(uiPanel.transform, "CreditsLabel", "CREDITS", new Vector2(-400, 85), 20);
+        CreateValueText(uiPanel.transform, "CreditsText", "1000", new Vector2(-400, 50), 28);
+        CreateLabel(uiPanel.transform, "BetLabel", "BET", new Vector2(0, 85), 20);
+        CreateValueText(uiPanel.transform, "BetText", "10", new Vector2(0, 50), 28);
+        CreateLabel(uiPanel.transform, "WinLabel", "WIN", new Vector2(400, 85), 20);
+        CreateValueText(uiPanel.transform, "WinText", "0", new Vector2(400, 50), 28);
 
         // ── LeverVisual ──
-        // slot-machine2.png and slot-machine3.png are Sprite Mode = Multiple.
-        // LoadAssetAtPath returns the sub-sprites: slot-machine2_0 (94x272) and
-        // slot-machine3_0 (94x61). These are NOT full-canvas overlays.
-        //
-        // Position is calculated by scaling the sub-sprite's canvas coordinates
-        // (672, 57) by 650/816 to map from the 816x624 source canvas into the
-        // 650x650 MachineContainer.
-        float canvasScale = 650f / 816f;
-        float leverW = 94f * canvasScale;   // 74.9
-        float leverH = 272f * canvasScale;  // 216.7
-        float leverX = 672f * canvasScale;  // 535.3 (from left)
-        float leverY = 57f * canvasScale;   // 45.4  (from bottom)
-
+        // Manually tuned position inside the 650x650 MachineContainer.
         var leverVisualGO = CreateUIObject("LeverVisual", machineContainer.transform);
         var leverVisRect = leverVisualGO.GetComponent<RectTransform>();
-        leverVisRect.anchorMin = new Vector2(0f, 0f);
-        leverVisRect.anchorMax = new Vector2(0f, 0f);
-        leverVisRect.pivot = new Vector2(0f, 0f);
-        leverVisRect.sizeDelta = new Vector2(leverW, leverH);
-        leverVisRect.anchoredPosition = new Vector2(leverX, leverY);
+        leverVisRect.anchorMin = new Vector2(0.5f, 0.5f);
+        leverVisRect.anchorMax = new Vector2(0.5f, 0.5f);
+        leverVisRect.pivot = new Vector2(0.5f, 0.5f);
+        leverVisRect.sizeDelta = new Vector2(94f, 272f);
+        leverVisRect.anchoredPosition = new Vector2(245f, -275f);
         var leverImg = leverVisualGO.AddComponent<Image>();
         leverImg.sprite = LoadSprite("f67aab7c3b90a0147bbea5420c271311");
         leverImg.preserveAspect = true;
         leverImg.raycastTarget = false;
 
         // ── LeverHitArea: transparent Button over the lever ──
+        // Manually tuned size/position aligned with LeverVisual.
         var leverHitGO = CreateUIObject("LeverHitArea", machineContainer.transform);
         var leverHitRect = leverHitGO.GetComponent<RectTransform>();
-        leverHitRect.anchorMin = new Vector2(0f, 0f);
-        leverHitRect.anchorMax = new Vector2(0f, 0f);
-        leverHitRect.pivot = new Vector2(0f, 0f);
-        leverHitRect.sizeDelta = new Vector2(leverW, leverH);
-        leverHitRect.anchoredPosition = new Vector2(leverX, leverY);
+        leverHitRect.anchorMin = new Vector2(0.5f, 0.5f);
+        leverHitRect.anchorMax = new Vector2(0.5f, 0.5f);
+        leverHitRect.pivot = new Vector2(0.5f, 0.5f);
+        leverHitRect.sizeDelta = new Vector2(90f, 230f);
+        leverHitRect.anchoredPosition = new Vector2(245f, -275f);
         var leverHitImg = leverHitGO.AddComponent<Image>();
         leverHitImg.color = new Color(0, 0, 0, 0);
         leverHitGO.AddComponent<Button>();
@@ -269,6 +263,11 @@ public static class BuildScene
 
         // ── GameManager ──
         PayoutTable payoutTable = LoadPayoutTable();
+        if (payoutTable == null)
+        {
+            Debug.LogError("BuildScene aborted: PayoutTable is required but missing.");
+            return;
+        }
         var gmGO = new GameObject("GameManager");
         var gm = gmGO.AddComponent<GameManager>();
         var gmSO = new SerializedObject(gm);
@@ -286,6 +285,30 @@ public static class BuildScene
         // Now that GameManager exists, wire it into LeverController
         lcSO = new SerializedObject(leverCtrl);
         lcSO.FindProperty("gameManager").objectReferenceValue = gm;
+        lcSO.ApplyModifiedProperties();
+
+        // ── SlotAudioController ──
+        var audioGO = new GameObject("SlotAudioController");
+        var audioSrc = audioGO.AddComponent<AudioSource>();
+        audioSrc.playOnAwake = false;
+        audioSrc.loop = false;
+        audioSrc.spatialBlend = 0f;
+        audioSrc.spread = 0f;
+        var audioCtrl = audioGO.AddComponent<SlotAudioController>();
+        var acSO = new SerializedObject(audioCtrl);
+        acSO.FindProperty("slotMachineClip").objectReferenceValue = LoadAudioClip("c0a0b33d1fe74404c96e32e2c50dda83");
+        acSO.FindProperty("leverClip").objectReferenceValue = LoadAudioClip("9b8725246303d814fbbb27c53322a419");
+        acSO.FindProperty("winJackpotClip").objectReferenceValue = LoadAudioClip("d855d56a50752f24d95f8cd8efbb3984");
+        acSO.ApplyModifiedProperties();
+
+        // Wire SlotAudioController into GameManager
+        gmSO = new SerializedObject(gm);
+        gmSO.FindProperty("audioController").objectReferenceValue = audioCtrl;
+        gmSO.ApplyModifiedProperties();
+
+        // Wire SlotAudioController into LeverController
+        lcSO = new SerializedObject(leverCtrl);
+        lcSO.FindProperty("audioController").objectReferenceValue = audioCtrl;
         lcSO.ApplyModifiedProperties();
 
         // ── EventSystem ──
@@ -370,18 +393,41 @@ public static class BuildScene
 
     static SymbolData[] LoadSymbolAssets()
     {
-        return new SymbolData[]
+        string[] paths = new string[]
         {
-            AssetDatabase.LoadAssetAtPath<SymbolData>("Assets/Data/Symbols/Symbol_1.asset"),
-            AssetDatabase.LoadAssetAtPath<SymbolData>("Assets/Data/Symbols/Symbol_2.asset"),
-            AssetDatabase.LoadAssetAtPath<SymbolData>("Assets/Data/Symbols/Symbol_3.asset"),
-            AssetDatabase.LoadAssetAtPath<SymbolData>("Assets/Data/Symbols/Symbol_4.asset"),
+            "Assets/Prefabs/Symbols/Symbol_1.asset",
+            "Assets/Prefabs/Symbols/Symbol_2.asset",
+            "Assets/Prefabs/Symbols/Symbol_3.asset",
+            "Assets/Prefabs/Symbols/Symbol_4.asset",
         };
+
+        SymbolData[] assets = new SymbolData[paths.Length];
+        for (int i = 0; i < paths.Length; i++)
+        {
+            assets[i] = AssetDatabase.LoadAssetAtPath<SymbolData>(paths[i]);
+            if (assets[i] == null)
+                Debug.LogWarning($"BuildScene: SymbolData not found at {paths[i]}");
+        }
+        return assets;
     }
 
+    // PayoutTable is a required dependency for GameManager — it determines win/loss
+    // on every completed spin. A missing PayoutTable causes a NullReferenceException
+    // in OnAllReelsStopped, so we fail loudly rather than silently assign null.
     static PayoutTable LoadPayoutTable()
     {
-        return AssetDatabase.LoadAssetAtPath<PayoutTable>("Assets/Data/Payout/PayoutTable.asset");
+        const string path = "Assets/Prefabs/Payout/PayoutTable.asset";
+        PayoutTable pt = AssetDatabase.LoadAssetAtPath<PayoutTable>(path);
+        if (pt == null)
+            Debug.LogError($"BuildScene: PayoutTable asset not found at {path}. " +
+                "Run Tools > Create Slot Machine Assets first, then rebuild the scene.");
+        return pt;
+    }
+
+    static AudioClip LoadAudioClip(string guid)
+    {
+        string path = AssetDatabase.GUIDToAssetPath(guid);
+        return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
     }
 
     static Sprite LoadSprite(string guid)

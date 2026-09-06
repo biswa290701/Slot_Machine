@@ -19,6 +19,7 @@ public class LeverController : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private GameManager gameManager;
+    [SerializeField] private SlotAudioController audioController;
 
     private bool isLocked = false;
     private Vector2 upPosition;
@@ -39,6 +40,7 @@ public class LeverController : MonoBehaviour
         isLocked = true;
         leverButton.interactable = false;
         ApplyState(leverDown, downPositionOffset);
+        audioController?.PlayLeverSound();
         gameManager.Spin();
     }
 

@@ -10,6 +10,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private UIManager uiManager;
     [SerializeField] private WinPopup winPopup;
     [SerializeField] private LeverController leverController;
+    [SerializeField] private SlotAudioController audioController;
 
     private bool isSpinning = false;
 
@@ -39,6 +40,7 @@ public class GameManager : MonoBehaviour
         }
 
         reelManager.StartSpin(outcomes, OnAllReelsStopped);
+        audioController?.StartSpinSound();
     }
 
     // Callback from ReelManager after all 3 reels stop. Payout is calculated as:
@@ -56,6 +58,11 @@ public class GameManager : MonoBehaviour
             wallet.AddCredits(totalWin);
             uiManager.SetWinText(totalWin);
             winPopup.ShowPopup(totalWin);
+            audioController?.PlayWinSound();
+        }
+        else
+        {
+            audioController?.StopSpinSound();
         }
 
         leverController.SetInteractable(wallet.CanPlaceBet());
