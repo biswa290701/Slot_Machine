@@ -4,6 +4,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
+/// <summary>
+/// Drives a single reel column. At runtime BuildStrip() constructs a vertical
+/// strip of symbol images, placing the target at the center (paddingCount).
+/// SpinSequence() scrolls the strip with smoothstep easing and a brief bounce.
+/// The visual filler sequence cycles through all available symbols by index,
+/// so it adapts automatically to any symbol count.
+/// </summary>
 public class ReelColumn : MonoBehaviour
 {
     [Header("References")]
@@ -12,16 +19,10 @@ public class ReelColumn : MonoBehaviour
     [SerializeField] private float symbolHeight = 100f;
     [SerializeField] private int paddingCount = 8;
 
-    // Fixed visual sequence for non-target filler symbols during reel spin.
-    // Cycles through allSymbols by index. Modify this array to change the scrolling pattern.
-    private static readonly int[] visualSequence = { 0, 1, 2, 3 };
-
     private float symbolSpacing;
     private bool isSpinning = false;
     private Coroutine spinCoroutine;
     private Action onStopped;
-
-    private List<Image> symbolImages = new List<Image>();
 
     private void Awake()
     {
@@ -30,6 +31,12 @@ public class ReelColumn : MonoBehaviour
 
     public void SpinToSymbol(SymbolData targetSymbol, float delay, Action onStopped)
     {
+        if (reelStripContent == null || allSymbols == null || allSymbols.Length == 0)
+        {
+            onStopped?.Invoke();
+            return;
+        }
+
         this.onStopped = onStopped;
         isSpinning = true;
 
@@ -103,7 +110,6 @@ public class ReelColumn : MonoBehaviour
         {
             Destroy(child.gameObject);
         }
-        symbolImages.Clear();
 
         int totalSymbols = paddingCount * 2 + 1;
         float totalHeight = (totalSymbols - 1) * symbolSpacing;
@@ -121,7 +127,9 @@ public class ReelColumn : MonoBehaviour
             }
             else
             {
-                symbolToShow = allSymbols[visualSequence[i % visualSequence.Length]];
+                // Cycle through allSymbols by index — adapts to any symbol count.
+                int seqIndex = i % allSymbols.Length;
+                symbolToShow = allSymbols[seqIndex];
 
                 // The target is randomly selected independently of the deterministic
                 // visual sequence, which can create duplicate adjacent symbols at the
@@ -134,11 +142,11 @@ public class ReelColumn : MonoBehaviour
                     if (i == targetPos - 1 || i == targetPos + 1)
                     {
                         int otherNeighbor = (i < targetPos) ? i - 1 : i + 1;
-                        SymbolData otherSymbol = allSymbols[visualSequence[otherNeighbor % visualSequence.Length]];
+                        SymbolData otherSymbol = allSymbols[otherNeighbor % allSymbols.Length];
 
-                        for (int offset = 1; offset < visualSequence.Length; offset++)
+                        for (int offset = 1; offset < allSymbols.Length; offset++)
                         {
-                            SymbolData candidate = allSymbols[visualSequence[(i + offset) % visualSequence.Length]];
+                            SymbolData candidate = allSymbols[(i + offset) % allSymbols.Length];
                             if (candidate != targetSymbol && candidate != otherSymbol)
                             {
                                 symbolToShow = candidate;
@@ -166,8 +174,6 @@ public class ReelColumn : MonoBehaviour
                 img.sprite = symbolToShow.sprite;
                 img.preserveAspect = true;
             }
-
-            symbolImages.Add(img);
         }
 
         return targetRT;

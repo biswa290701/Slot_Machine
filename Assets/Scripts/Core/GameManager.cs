@@ -1,6 +1,11 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Collections;
 
+/// <summary>
+/// Central gameplay controller. Manages the spin → reel stop → payout → win/loss
+/// cycle and triggers GameOver when credits reach zero.
+/// </summary>
 public class GameManager : MonoBehaviour
 {
     [Header("References")]
@@ -18,12 +23,22 @@ public class GameManager : MonoBehaviour
     private bool isSpinning = false;
     private Coroutine winSequenceCoroutine;
 
+    private void Start()
+    {
+        if (wallet == null) Debug.LogError("GameManager: Wallet reference is missing.", this);
+        if (reelManager == null) Debug.LogError("GameManager: ReelManager reference is missing.", this);
+        if (payoutTable == null) Debug.LogError("GameManager: PayoutTable reference is missing.", this);
+        if (uiManager == null) Debug.LogError("GameManager: UIManager reference is missing.", this);
+        if (leverController == null) Debug.LogError("GameManager: LeverController reference is missing.", this);
+        if (betButtonController == null) Debug.LogError("GameManager: BetButtonController reference is missing.", this);
+    }
+
     public void Spin()
     {
         if (isSpinning)
             return;
 
-        if (!wallet.CanPlaceBet())
+        if (wallet == null || !wallet.CanPlaceBet())
             return;
 
         if (!wallet.PlaceBet())
@@ -62,10 +77,12 @@ public class GameManager : MonoBehaviour
         {
             audioController?.StopSpinSound();
             leverController.ResetLever();
-            betButtonController.UnlockButtons();
+            CheckGameOver();
         }
     }
 
+    // Win presentation plays while the jackpot audio runs. When the audio
+    // finishes, the presentation hides and we check for game over.
     private IEnumerator WinSequence(int winAmount)
     {
         winPresentationController.ShowWin(winAmount);
@@ -75,8 +92,19 @@ public class GameManager : MonoBehaviour
 
         winPresentationController.HideWin();
         leverController.ResetLever();
-        betButtonController.UnlockButtons();
         winSequenceCoroutine = null;
+        CheckGameOver();
+    }
+
+    private void CheckGameOver()
+    {
+        if (wallet.Credits <= 0)
+        {
+            SceneManager.LoadScene("GameOver");
+            return;
+        }
+
+        betButtonController.UnlockButtons();
     }
 
     private void OnDestroy()

@@ -16,17 +16,22 @@ public class SlotAudioController : MonoBehaviour
 
     private void Awake()
     {
-        // The AudioSource is configured by BuildScene with playOnAwake = false
-        // and loop = false. We grab the reference here for runtime use.
         audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+            audioSource.loop = false;
+            audioSource.spatialBlend = 0f;
+        }
     }
 
     /// <summary>
-    /// Plays the lever pull sound once. Does not interrupt itself if called
-    /// multiple times in rapid succession — PlayOneShot queues overlapping sounds.
+    /// Plays the lever pull sound once via PlayOneShot (queues overlapping sounds).
     /// </summary>
     public void PlayLeverSound()
     {
+        if (audioSource == null) return;
         if (leverClip != null)
             audioSource.PlayOneShot(leverClip);
     }
@@ -37,8 +42,8 @@ public class SlotAudioController : MonoBehaviour
     /// </summary>
     public void StartSpinSound()
     {
-        if (slotMachineClip == null)
-            return;
+        if (audioSource == null) return;
+        if (slotMachineClip == null) return;
 
         if (audioSource.isPlaying && audioSource.clip == slotMachineClip)
             return;
@@ -53,6 +58,7 @@ public class SlotAudioController : MonoBehaviour
     /// </summary>
     public void StopSpinSound()
     {
+        if (audioSource == null) return;
         if (audioSource.clip == slotMachineClip && audioSource.isPlaying)
         {
             audioSource.Stop();
@@ -67,18 +73,19 @@ public class SlotAudioController : MonoBehaviour
     public void PlayWinSound()
     {
         StopSpinSound();
-
+        if (audioSource == null) return;
         if (winJackpotClip != null)
             audioSource.PlayOneShot(winJackpotClip);
     }
 
     /// <summary>
-    /// Returns true while the win/jackpot sound is still playing.
-    /// After StopSpinSound clears the clip, only PlayOneShot sounds remain —
-    /// so audioSource.isPlaying reliably indicates win sound playback.
+    /// Returns true while any audio is playing. After StopSpinSound clears
+    /// the clip, only PlayOneShot sounds remain — so audioSource.isPlaying
+    /// reliably indicates win sound playback.
     /// </summary>
     public bool IsWinSoundPlaying()
     {
+        if (audioSource == null) return false;
         return audioSource.isPlaying;
     }
 }

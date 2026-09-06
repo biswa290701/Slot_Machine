@@ -4,6 +4,10 @@ using UnityEngine.Events;
 [System.Serializable]
 public class IntUnityEvent : UnityEvent<int> { }
 
+/// <summary>
+/// Manages the player's credit balance and bet amount. Fires events so
+/// other systems (UI, audio) can react to balance changes without coupling.
+/// </summary>
 public class Wallet : MonoBehaviour
 {
     [Header("Settings")]
@@ -11,9 +15,6 @@ public class Wallet : MonoBehaviour
     [SerializeField] private int betAmount = 10;
 
     [Header("Events")]
-    // Events decouple Wallet from UI and other systems. onCreditsChanged fires on any
-    // balance mutation (bet or win), so UIManager can bind to it for automatic updates.
-    // onWinAwarded passes the win amount for UI feedback (popup, text flash, etc.).
     public UnityEvent onCreditsChanged;
     public IntUnityEvent onWinAwarded;
 
@@ -24,6 +25,8 @@ public class Wallet : MonoBehaviour
 
     public void SetBetAmount(int amount)
     {
+        if (amount <= 0)
+            return;
         betAmount = amount;
     }
 

@@ -1756,7 +1756,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1fb874e0647a734e80745e7cd50490a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Wallet
-  startingCredits: 1000
+  startingCredits: 500
   betAmount: 10
   onCreditsChanged:
     m_PersistentCalls:

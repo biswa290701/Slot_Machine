@@ -1,6 +1,11 @@
 using UnityEngine;
 using System;
 
+/// <summary>
+/// Coordinates spinning all three reels. Each reel starts simultaneously and
+/// stops after a staggered delay. The onComplete callback fires once after
+/// every reel has stopped.
+/// </summary>
 public class ReelManager : MonoBehaviour
 {
     [Header("References")]
@@ -10,11 +15,20 @@ public class ReelManager : MonoBehaviour
     private int stoppedCount;
     private Action<SymbolData[]> onComplete;
 
-    // All reels start spinning simultaneously. Each reel stops after a staggered delay,
-    // creating the cascading stop effect. The callback fires only after ALL reels have
-    // stopped, using a simple counter to synchronize.
     public void StartSpin(SymbolData[] outcomes, Action<SymbolData[]> onComplete)
     {
+        if (reels == null || reels.Length == 0)
+        {
+            onComplete?.Invoke(outcomes);
+            return;
+        }
+
+        if (outcomes == null || outcomes.Length < reels.Length)
+        {
+            onComplete?.Invoke(outcomes);
+            return;
+        }
+
         finalOutcomes = outcomes;
         this.onComplete = onComplete;
         stoppedCount = 0;

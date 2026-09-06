@@ -1,6 +1,10 @@
 using UnityEngine;
 using TMPro;
 
+/// <summary>
+/// Updates the bottom UI bar (credits, bet, win) from Wallet state.
+/// Subscribes to Wallet.onCreditsChanged for automatic updates.
+/// </summary>
 public class UIManager : MonoBehaviour
 {
     [Header("References")]
@@ -9,10 +13,14 @@ public class UIManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI betText;
     [SerializeField] private TextMeshProUGUI winText;
 
-    // Subscribe to Wallet's credits-changed event so the UI updates automatically
-    // whenever a bet is placed or a win is awarded -- no polling needed.
     private void Start()
     {
+        if (wallet == null)
+        {
+            Debug.LogError("UIManager: Wallet reference is missing.", this);
+            return;
+        }
+
         wallet.onCreditsChanged.AddListener(UpdateCreditsDisplay);
         UpdateCreditsDisplay();
         UpdateBetDisplay();
