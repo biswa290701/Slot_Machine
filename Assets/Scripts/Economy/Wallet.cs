@@ -22,6 +22,11 @@ public class Wallet : MonoBehaviour
     public int Credits => credits;
     public int BetAmount => betAmount;
 
+    public void SetBetAmount(int amount)
+    {
+        betAmount = amount;
+    }
+
     private void Start()
     {
         credits = startingCredits;

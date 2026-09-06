@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
@@ -10,13 +11,13 @@ public class GameManager : MonoBehaviour
     [SerializeField] private UIManager uiManager;
     [SerializeField] private WinPopup winPopup;
     [SerializeField] private LeverController leverController;
+    [SerializeField] private BetButtonController betButtonController;
     [SerializeField] private SlotAudioController audioController;
+    [SerializeField] private WinPresentationController winPresentationController;
 
     private bool isSpinning = false;
+    private Coroutine winSequenceCoroutine;
 
-    // Spin flow: guard -> validate bet -> deduct bet -> lock input -> generate outcomes -> spin reels.
-    // Outcomes are determined upfront (not by the reels) so the RNG is cleanly separated
-    // from the animation. Reels merely animate toward their pre-determined targets.
     public void Spin()
     {
         if (isSpinning)
@@ -43,9 +44,6 @@ public class GameManager : MonoBehaviour
         audioController?.StartSpinSound();
     }
 
-    // Callback from ReelManager after all 3 reels stop. Payout is calculated as:
-    // multiplier (from PayoutTable) * current bet amount. Winnings are added back to
-    // wallet, which fires its own events to update the UI.
     private void OnAllReelsStopped(SymbolData[] results)
     {
         isSpinning = false;
@@ -58,13 +56,32 @@ public class GameManager : MonoBehaviour
             wallet.AddCredits(totalWin);
             uiManager.SetWinText(totalWin);
             winPopup.ShowPopup(totalWin);
-            audioController?.PlayWinSound();
+            winSequenceCoroutine = StartCoroutine(WinSequence(totalWin));
         }
         else
         {
             audioController?.StopSpinSound();
+            leverController.ResetLever();
+            betButtonController.UnlockButtons();
         }
+    }
 
-        leverController.SetInteractable(wallet.CanPlaceBet());
+    private IEnumerator WinSequence(int winAmount)
+    {
+        winPresentationController.ShowWin(winAmount);
+        audioController?.PlayWinSound();
+
+        yield return new WaitUntil(() => !audioController.IsWinSoundPlaying());
+
+        winPresentationController.HideWin();
+        leverController.ResetLever();
+        betButtonController.UnlockButtons();
+        winSequenceCoroutine = null;
+    }
+
+    private void OnDestroy()
+    {
+        if (winSequenceCoroutine != null)
+            StopCoroutine(winSequenceCoroutine);
     }
 }

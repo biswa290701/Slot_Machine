@@ -45,6 +45,7 @@ public static class BuildScene
         bgImg.sprite = LoadSprite("891afb2abfecfe94c8228786c61dd5da");
         bgImg.type = Image.Type.Simple;
         bgImg.preserveAspect = false;
+        bgImg.raycastTarget = false;
         StretchFill(bgGO.GetComponent<RectTransform>());
 
         // ── MachineContainer ──
@@ -62,6 +63,7 @@ public static class BuildScene
         frameImg.sprite = LoadSprite("0c2458e564b04de40b66207584cc2f17");
         frameImg.type = Image.Type.Simple;
         frameImg.preserveAspect = true;
+        frameImg.raycastTarget = false;
         StretchFill(frameGO.GetComponent<RectTransform>());
 
         // ── Reel Masks ──
@@ -129,18 +131,109 @@ public static class BuildScene
         leverImg.preserveAspect = true;
         leverImg.raycastTarget = false;
 
-        // ── LeverHitArea: transparent Button over the lever ──
-        // Manually tuned size/position aligned with LeverVisual.
-        var leverHitGO = CreateUIObject("LeverHitArea", machineContainer.transform);
-        var leverHitRect = leverHitGO.GetComponent<RectTransform>();
-        leverHitRect.anchorMin = new Vector2(0.5f, 0.5f);
-        leverHitRect.anchorMax = new Vector2(0.5f, 0.5f);
-        leverHitRect.pivot = new Vector2(0.5f, 0.5f);
-        leverHitRect.sizeDelta = new Vector2(90f, 230f);
-        leverHitRect.anchoredPosition = new Vector2(245f, -275f);
-        var leverHitImg = leverHitGO.AddComponent<Image>();
-        leverHitImg.color = new Color(0, 0, 0, 0);
-        leverHitGO.AddComponent<Button>();
+        // ── Bet Panel (right side of machine) ──
+        var betPanelGO = CreateUIObject("BetPanel", canvasGO.transform);
+        var betPanelRect = betPanelGO.GetComponent<RectTransform>();
+        betPanelRect.anchorMin = new Vector2(0.5f, 0.5f);
+        betPanelRect.anchorMax = new Vector2(0.5f, 0.5f);
+        betPanelRect.pivot = new Vector2(0.5f, 0.5f);
+        betPanelRect.sizeDelta = new Vector2(150f, 210f);
+        betPanelRect.anchoredPosition = new Vector2(420f, 0f);
+
+        var betTitleGO = CreateUIObject("BetTitle", betPanelGO.transform);
+        var betTitleRect = betTitleGO.GetComponent<RectTransform>();
+        betTitleRect.anchorMin = new Vector2(0.5f, 1f);
+        betTitleRect.anchorMax = new Vector2(0.5f, 1f);
+        betTitleRect.pivot = new Vector2(0.5f, 1f);
+        betTitleRect.sizeDelta = new Vector2(140, 30);
+        betTitleRect.anchoredPosition = new Vector2(0, -5);
+        var betTitleTMP = betTitleGO.AddComponent<TextMeshProUGUI>();
+        betTitleTMP.text = "BET";
+        betTitleTMP.fontSize = 22;
+        betTitleTMP.alignment = TextAlignmentOptions.Center;
+        betTitleTMP.color = new Color(0.7f, 0.7f, 0.7f, 1f);
+        betTitleTMP.raycastTarget = false;
+
+        string[] betLabels = { "10", "20", "50" };
+        Color normalColor = new Color(0.25f, 0.25f, 0.3f, 1f);
+        var betBtnGOs = new GameObject[3];
+        for (int i = 0; i < 3; i++)
+        {
+            var btnGO = CreateUIObject($"BetButton_{betLabels[i]}", betPanelGO.transform);
+            var btnRect = btnGO.GetComponent<RectTransform>();
+            btnRect.anchorMin = new Vector2(0.5f, 1f);
+            btnRect.anchorMax = new Vector2(0.5f, 1f);
+            btnRect.pivot = new Vector2(0.5f, 1f);
+            btnRect.sizeDelta = new Vector2(130, 55);
+            btnRect.anchoredPosition = new Vector2(0, -40 - i * 62);
+
+            var btnImg = btnGO.AddComponent<Image>();
+            btnImg.color = normalColor;
+
+            var btn = btnGO.AddComponent<Button>();
+            var cb = btn.colors;
+            cb.normalColor = normalColor;
+            cb.highlightedColor = new Color(0.35f, 0.35f, 0.4f, 1f);
+            cb.pressedColor = new Color(0.15f, 0.15f, 0.2f, 1f);
+            cb.selectedColor = new Color(0.85f, 0.65f, 0.15f, 1f);
+            cb.fadeDuration = 0.1f;
+            btn.colors = cb;
+            btn.navigation = new Navigation { mode = Navigation.Mode.None };
+
+            var labelGO = CreateUIObject("Label", btnGO.transform);
+            var labelRect = labelGO.GetComponent<RectTransform>();
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.sizeDelta = Vector2.zero;
+            labelRect.anchoredPosition = Vector2.zero;
+            var labelTMP = labelGO.AddComponent<TextMeshProUGUI>();
+            labelTMP.text = betLabels[i];
+            labelTMP.fontSize = 28;
+            labelTMP.alignment = TextAlignmentOptions.Center;
+            labelTMP.color = Color.white;
+            labelTMP.fontStyle = FontStyles.Bold;
+            labelTMP.raycastTarget = false;
+
+            betBtnGOs[i] = btnGO;
+        }
+
+        // ── Explicit bet button configuration ──
+        for (int i = 0; i < 3; i++)
+        {
+            var btnGO = betBtnGOs[i];
+            var btn = btnGO.GetComponent<Button>();
+            var btnImg = btnGO.GetComponent<Image>();
+            if (btn != null && btnImg != null)
+            {
+                btn.targetGraphic = btnImg;
+                btnImg.raycastTarget = true;
+                btn.interactable = true;
+            }
+        }
+
+        // ── Win Presentation (above machine, initially inactive) ──
+        var winPresGO = CreateUIObject("WinPresentation", canvasGO.transform);
+        var winPresRect = winPresGO.GetComponent<RectTransform>();
+        winPresRect.anchorMin = new Vector2(0.5f, 1f);
+        winPresRect.anchorMax = new Vector2(0.5f, 1f);
+        winPresRect.pivot = new Vector2(0.5f, 1f);
+        winPresRect.sizeDelta = new Vector2(600f, 100f);
+        winPresRect.anchoredPosition = new Vector2(0f, -20f);
+        winPresGO.SetActive(false);
+
+        var winPresTextGO = CreateUIObject("WinPresentationText", winPresGO.transform);
+        var winPresTextRect = winPresTextGO.GetComponent<RectTransform>();
+        winPresTextRect.anchorMin = Vector2.zero;
+        winPresTextRect.anchorMax = Vector2.one;
+        winPresTextRect.sizeDelta = Vector2.zero;
+        winPresTextRect.anchoredPosition = Vector2.zero;
+        var winPresTextTMP = winPresTextGO.AddComponent<TextMeshProUGUI>();
+        winPresTextTMP.text = "";
+        winPresTextTMP.fontSize = 52;
+        winPresTextTMP.fontStyle = FontStyles.Bold;
+        winPresTextTMP.alignment = TextAlignmentOptions.Center;
+winPresTextTMP.color = new Color(1f, 0.85f, 0.2f, 1f);
+winPresTextTMP.raycastTarget = false;
 
         // ── WinPopup (inactive) ──
         var popupGO = CreateUIObject("WinPopup", canvasGO.transform);
@@ -256,10 +349,26 @@ public static class BuildScene
         var leverCtrl = lcGO.AddComponent<LeverController>();
         var lcSO = new SerializedObject(leverCtrl);
         lcSO.FindProperty("leverImage").objectReferenceValue = leverImg;
-        lcSO.FindProperty("leverButton").objectReferenceValue = leverHitGO.GetComponent<Button>();
-        lcSO.FindProperty("leverUp").objectReferenceValue = leverImg.sprite;
-        lcSO.FindProperty("leverDown").objectReferenceValue = LoadSprite("546541a6bbeef114abcc35cb39cd0fe6");
+        lcSO.FindProperty("leverUpSprite").objectReferenceValue = leverImg.sprite;
+        lcSO.FindProperty("leverDownSprite").objectReferenceValue = LoadSprite("546541a6bbeef114abcc35cb39cd0fe6");
+        lcSO.FindProperty("downPositionOffset").vector2Value = Vector2.zero;
         lcSO.ApplyModifiedProperties();
+
+        // ── BetButtonController (created before GameManager so GameManager can reference it) ──
+        var betCtrlGO = new GameObject("BetButtonController");
+        var betCtrl = betCtrlGO.AddComponent<BetButtonController>();
+        var bcSO = new SerializedObject(betCtrl);
+        bcSO.FindProperty("betButtons").arraySize = 3;
+        for (int i = 0; i < 3; i++)
+            bcSO.FindProperty("betButtons").GetArrayElementAtIndex(i).objectReferenceValue = betBtnGOs[i].GetComponent<Button>();
+        bcSO.FindProperty("betAmounts").arraySize = 3;
+        bcSO.FindProperty("betAmounts").GetArrayElementAtIndex(0).intValue = 10;
+        bcSO.FindProperty("betAmounts").GetArrayElementAtIndex(1).intValue = 20;
+        bcSO.FindProperty("betAmounts").GetArrayElementAtIndex(2).intValue = 50;
+        bcSO.FindProperty("wallet").objectReferenceValue = wallet;
+        bcSO.FindProperty("leverController").objectReferenceValue = leverCtrl;
+        bcSO.FindProperty("uiManager").objectReferenceValue = uiMgr;
+        bcSO.ApplyModifiedProperties();
 
         // ── GameManager ──
         PayoutTable payoutTable = LoadPayoutTable();
@@ -277,15 +386,11 @@ public static class BuildScene
         gmSO.FindProperty("uiManager").objectReferenceValue = uiMgr;
         gmSO.FindProperty("winPopup").objectReferenceValue = popup;
         gmSO.FindProperty("leverController").objectReferenceValue = leverCtrl;
+        gmSO.FindProperty("betButtonController").objectReferenceValue = betCtrl;
         gmSO.FindProperty("symbols").arraySize = allSymbols.Length;
         for (int i = 0; i < allSymbols.Length; i++)
             gmSO.FindProperty("symbols").GetArrayElementAtIndex(i).objectReferenceValue = allSymbols[i];
         gmSO.ApplyModifiedProperties();
-
-        // Now that GameManager exists, wire it into LeverController
-        lcSO = new SerializedObject(leverCtrl);
-        lcSO.FindProperty("gameManager").objectReferenceValue = gm;
-        lcSO.ApplyModifiedProperties();
 
         // ── SlotAudioController ──
         var audioGO = new GameObject("SlotAudioController");
@@ -311,6 +416,24 @@ public static class BuildScene
         lcSO.FindProperty("audioController").objectReferenceValue = audioCtrl;
         lcSO.ApplyModifiedProperties();
 
+        // Wire GameManager into BetButtonController (second pass — betCtrl created before gm)
+        bcSO = new SerializedObject(betCtrl);
+        bcSO.FindProperty("gameManager").objectReferenceValue = gm;
+        bcSO.ApplyModifiedProperties();
+
+        // ── WinPresentationController ──
+        var winPresCtrlGO = new GameObject("WinPresentationController");
+        var winPresCtrl = winPresCtrlGO.AddComponent<WinPresentationController>();
+        var wpcSO = new SerializedObject(winPresCtrl);
+        wpcSO.FindProperty("winPresentationRoot").objectReferenceValue = winPresGO;
+        wpcSO.FindProperty("winText").objectReferenceValue = winPresTextTMP;
+        wpcSO.ApplyModifiedProperties();
+
+        // Wire WinPresentationController into GameManager
+        gmSO = new SerializedObject(gm);
+        gmSO.FindProperty("winPresentationController").objectReferenceValue = winPresCtrl;
+        gmSO.ApplyModifiedProperties();
+
         // ── EventSystem ──
         var existingES = Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>();
         GameObject esGO;
@@ -331,7 +454,8 @@ public static class BuildScene
         }
 
         EditorSceneManager.MarkSceneDirty(scene);
-        Debug.Log("Slot machine scene built successfully with all references wired.");
+        EditorSceneManager.SaveScene(scene);
+        Debug.Log("Slot machine scene built and saved successfully with all references wired.");
     }
 
     static GameObject CreateUIObject(string name, Transform parent)
@@ -364,6 +488,7 @@ public static class BuildScene
         tmp.fontSize = fontSize;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = new Color(0.7f, 0.7f, 0.7f, 1f);
+        tmp.raycastTarget = false;
     }
 
     static void CreateValueText(Transform parent, string name, string text, Vector2 pos, float fontSize)
@@ -381,6 +506,7 @@ public static class BuildScene
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = Color.white;
         tmp.fontStyle = FontStyles.Bold;
+        tmp.raycastTarget = false;
     }
 
     static TextMeshProUGUI FindChildTMP(GameObject parent, string childName)

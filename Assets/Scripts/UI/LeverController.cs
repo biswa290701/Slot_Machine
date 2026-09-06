@@ -1,72 +1,67 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// Visual-only lever controller. Shows UP sprite normally, DOWN sprite when spin starts.
+/// BetButtonController triggers PlaySpinAnimation(); GameManager triggers ResetLever().
+/// No user interaction — the lever is purely decorative feedback.
+/// </summary>
 public class LeverController : MonoBehaviour
 {
     [Header("Visual")]
     [SerializeField] private Image leverImage;
+    [SerializeField] private Sprite leverUpSprite;
+    [SerializeField] private Sprite leverDownSprite;
 
-    [Header("Interaction")]
-    [SerializeField] private Button leverButton;
+    [Header("Position")]
+    [SerializeField] private Vector2 downPositionOffset;
 
-    [Header("Sprites")]
-    [SerializeField] private Sprite leverUp;
-    [SerializeField] private Sprite leverDown;
-
-    [Header("Down State Offset")]
-    [Tooltip("Position offset applied to LeverVisual when the DOWN sprite is active. Adjust in Inspector to align the pulled lever.")]
-    [SerializeField] private Vector2 downPositionOffset = Vector2.zero;
-
-    [Header("References")]
-    [SerializeField] private GameManager gameManager;
+    [Header("Audio")]
     [SerializeField] private SlotAudioController audioController;
 
-    private bool isLocked = false;
-    private Vector2 upPosition;
+    private RectTransform leverRect;
+    private Vector2 basePosition;
+    private bool isDown = false;
 
     private void Awake()
     {
-        var rect = leverImage.GetComponent<RectTransform>();
-        upPosition = rect.anchoredPosition;
-        leverImage.sprite = leverUp;
-        leverButton.onClick.AddListener(OnLeverClicked);
+        leverRect = leverImage.GetComponent<RectTransform>();
+        basePosition = leverRect.anchoredPosition;
+        leverImage.sprite = leverUpSprite;
+        isDown = false;
     }
 
-    private void OnLeverClicked()
+    /// <summary>
+    /// Animates lever to DOWN state. Called by BetButtonController on bet click.
+    /// </summary>
+    public void PlaySpinAnimation()
     {
-        if (isLocked)
-            return;
-
-        isLocked = true;
-        leverButton.interactable = false;
-        ApplyState(leverDown, downPositionOffset);
-        audioController?.PlayLeverSound();
-        gameManager.Spin();
+        if (isDown) return;
+        isDown = true;
+        leverImage.sprite = leverDownSprite;
+        leverRect.anchoredPosition = basePosition + downPositionOffset;
     }
 
+    /// <summary>
+    /// Resets lever to UP state. Called by GameManager when all reels stop.
+    /// </summary>
+    public void ResetLever()
+    {
+        if (!isDown) return;
+        isDown = false;
+        leverImage.sprite = leverUpSprite;
+        leverRect.anchoredPosition = basePosition;
+    }
+
+    /// <summary>
+    /// Kept for backward compatibility with GameManager calls.
+    /// Does nothing — lever state is now managed by PlaySpinAnimation/ResetLever.
+    /// </summary>
     public void SetInteractable(bool interactable)
     {
         if (interactable)
-        {
-            isLocked = false;
-            leverButton.interactable = true;
-            ApplyState(leverUp, Vector2.zero);
-        }
+            ResetLever();
         else
-        {
-            isLocked = true;
-            leverButton.interactable = false;
-        }
-    }
-
-    // Immediately sets the sprite, resizes the RectTransform to match the sprite's
-    // native dimensions, and applies the given position offset relative to the
-    // UP state's anchored position. offset=(0,0) restores the UP position exactly.
-    private void ApplyState(Sprite sprite, Vector2 offset)
-    {
-        leverImage.sprite = sprite;
-        var rect = leverImage.GetComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(sprite.rect.width, sprite.rect.height);
-        rect.anchoredPosition = upPosition + offset;
+            PlaySpinAnimation();
     }
 }

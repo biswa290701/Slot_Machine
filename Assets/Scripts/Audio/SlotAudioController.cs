@@ -71,4 +71,14 @@ public class SlotAudioController : MonoBehaviour
         if (winJackpotClip != null)
             audioSource.PlayOneShot(winJackpotClip);
     }
+
+    /// <summary>
+    /// Returns true while the win/jackpot sound is still playing.
+    /// After StopSpinSound clears the clip, only PlayOneShot sounds remain —
+    /// so audioSource.isPlaying reliably indicates win sound playback.
+    /// </summary>
+    public bool IsWinSoundPlaying()
+    {
+        return audioSource.isPlaying;
+    }
 }

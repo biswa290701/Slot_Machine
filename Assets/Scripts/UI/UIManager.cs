@@ -36,4 +36,10 @@ public class UIManager : MonoBehaviour
         if (winText != null)
             winText.text = amount > 0 ? amount.ToString() : "";
     }
+
+    public void SetBetText(int amount)
+    {
+        if (betText != null)
+            betText.text = amount.ToString();
+    }
 }
