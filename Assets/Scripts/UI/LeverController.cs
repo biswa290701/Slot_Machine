@@ -14,7 +14,7 @@ public class LeverController : MonoBehaviour
     [SerializeField] private Sprite leverDownSprite;
 
     [Header("Position")]
-    [SerializeField] private Vector2 downPositionOffset;
+    [SerializeField] private Vector2 downPositionOffset = new Vector2(0, -170);
 
     [Header("Audio")]
     [SerializeField] private SlotAudioController audioController;

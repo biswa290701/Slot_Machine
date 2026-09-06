@@ -50,6 +50,7 @@ public static class BuildScene
 
         // ── MachineContainer ──
         var machineContainer = CreateUIObject("MachineContainer", canvasGO.transform);
+
         var mcRect = machineContainer.GetComponent<RectTransform>();
         mcRect.anchorMin = new Vector2(0.5f, 0.5f);
         mcRect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -110,12 +111,12 @@ public static class BuildScene
         uiPanelRect.anchoredPosition = Vector2.zero;
 
         // ── Bottom UI — manually tuned positions ──
-        CreateLabel(uiPanel.transform, "CreditsLabel", "CREDITS", new Vector2(-400, 85), 20);
-        CreateValueText(uiPanel.transform, "CreditsText", "1000", new Vector2(-400, 50), 28);
-        CreateLabel(uiPanel.transform, "BetLabel", "BET", new Vector2(0, 85), 20);
-        CreateValueText(uiPanel.transform, "BetText", "10", new Vector2(0, 50), 28);
-        CreateLabel(uiPanel.transform, "WinLabel", "WIN", new Vector2(400, 85), 20);
-        CreateValueText(uiPanel.transform, "WinText", "0", new Vector2(400, 50), 28);
+        CreateLabel(uiPanel.transform, "CreditsLabel", "CREDITS", new Vector2(-400, 45), 20);
+        CreateValueText(uiPanel.transform, "CreditsText", "1000", new Vector2(-400, 10), 28);
+        CreateLabel(uiPanel.transform, "BetLabel", "BET", new Vector2(0, 45), 20);
+        CreateValueText(uiPanel.transform, "BetText", "10", new Vector2(0, 10), 28);
+        CreateLabel(uiPanel.transform, "WinLabel", "WIN", new Vector2(400, 45), 20);
+        CreateValueText(uiPanel.transform, "WinText", "0", new Vector2(400, 10), 28);
 
         // ── LeverVisual ──
         // Manually tuned position inside the 650x650 MachineContainer.
@@ -125,7 +126,7 @@ public static class BuildScene
         leverVisRect.anchorMax = new Vector2(0.5f, 0.5f);
         leverVisRect.pivot = new Vector2(0.5f, 0.5f);
         leverVisRect.sizeDelta = new Vector2(94f, 272f);
-        leverVisRect.anchoredPosition = new Vector2(245f, -275f);
+        leverVisRect.anchoredPosition = new Vector2(290f, -130f);
         var leverImg = leverVisualGO.AddComponent<Image>();
         leverImg.sprite = LoadSprite("f67aab7c3b90a0147bbea5420c271311");
         leverImg.preserveAspect = true;
@@ -138,7 +139,7 @@ public static class BuildScene
         betPanelRect.anchorMax = new Vector2(0.5f, 0.5f);
         betPanelRect.pivot = new Vector2(0.5f, 0.5f);
         betPanelRect.sizeDelta = new Vector2(150f, 210f);
-        betPanelRect.anchoredPosition = new Vector2(420f, 0f);
+        betPanelRect.anchoredPosition = new Vector2(636f, 0f);
 
         var betTitleGO = CreateUIObject("BetTitle", betPanelGO.transform);
         var betTitleRect = betTitleGO.GetComponent<RectTransform>();
@@ -232,8 +233,8 @@ public static class BuildScene
         winPresTextTMP.fontSize = 52;
         winPresTextTMP.fontStyle = FontStyles.Bold;
         winPresTextTMP.alignment = TextAlignmentOptions.Center;
-winPresTextTMP.color = new Color(1f, 0.85f, 0.2f, 1f);
-winPresTextTMP.raycastTarget = false;
+        winPresTextTMP.color = new Color(1f, 0.85f, 0.2f, 1f);
+        winPresTextTMP.raycastTarget = false;
 
         // ── WinPopup (inactive) ──
         var popupGO = CreateUIObject("WinPopup", canvasGO.transform);
@@ -561,4 +562,5 @@ winPresTextTMP.raycastTarget = false;
         string path = AssetDatabase.GUIDToAssetPath(guid);
         return AssetDatabase.LoadAssetAtPath<Sprite>(path);
     }
+
 }
